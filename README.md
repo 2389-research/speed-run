@@ -11,6 +11,7 @@ Token-efficient code generation pipeline. Uses hosted LLM (Cerebras) for fast, c
 ## Installation
 
 ```bash
+/plugin marketplace add 2389-research/claude-plugins
 /plugin install speed-run@2389-research
 ```
 
