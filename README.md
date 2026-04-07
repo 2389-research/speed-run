@@ -161,6 +161,6 @@ Speed-run was born from test-kitchen's token cost problem. Running 3-5 parallel 
 
 ---
 
-If xtool freed you from Xcode, a ⭐ helps us know it's landing.
+If Speed Run saved you tokens and time, a ⭐ helps us know it's landing.
 
 Built by [2389](https://2389.ai) · Part of the [Claude Code plugin marketplace](https://github.com/2389-research/claude-plugins)
