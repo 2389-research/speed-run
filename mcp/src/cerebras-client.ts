@@ -29,7 +29,10 @@ export class CerebrasClient {
   constructor() {
     this.apiKey = process.env.CEREBRAS_API_KEY;
     this.baseUrl = process.env.CEREBRAS_URL || "https://api.cerebras.ai/v1";
-    this.model = process.env.CEREBRAS_MODEL || "gpt-oss-120b";
+    // qwen-3-235b is available on Cerebras free tier and strong for codegen.
+    // Other models (gpt-oss-120b, zai-glm-4.7) are tier-gated and return 404
+    // on free/lower plans. Override with CEREBRAS_MODEL if you have tier access.
+    this.model = process.env.CEREBRAS_MODEL || "qwen-3-235b-a22b-instruct-2507";
     this.timeoutMs = parseFloat(process.env.GENERATION_TIMEOUT || "120") * 1000;
   }
 

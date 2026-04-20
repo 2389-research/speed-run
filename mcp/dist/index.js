@@ -20677,7 +20677,7 @@ var CerebrasClient = class {
   constructor() {
     this.apiKey = process.env.CEREBRAS_API_KEY;
     this.baseUrl = process.env.CEREBRAS_URL || "https://api.cerebras.ai/v1";
-    this.model = process.env.CEREBRAS_MODEL || "gpt-oss-120b";
+    this.model = process.env.CEREBRAS_MODEL || "qwen-3-235b-a22b-instruct-2507";
     this.timeoutMs = parseFloat(process.env.GENERATION_TIMEOUT || "120") * 1e3;
   }
   get isConfigured() {

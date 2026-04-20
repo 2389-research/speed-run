@@ -197,6 +197,21 @@ If tools aren't working, you probably forgot the API key. The session-start hook
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `CEREBRAS_API_KEY` | (required) | API key from https://cloud.cerebras.ai |
-| `CEREBRAS_MODEL` | `llama-4-scout-17b-16e-instruct` | Model to use |
+| `CEREBRAS_MODEL` | `qwen-3-235b-a22b-instruct-2507` | Model to use (see note below) |
 | `CEREBRAS_URL` | `https://api.cerebras.ai/v1` | API endpoint |
-| `GENERATION_TIMEOUT` | `30000` | Timeout in ms |
+| `GENERATION_TIMEOUT` | `120` | Timeout in seconds |
+
+### Model selection
+
+The default `qwen-3-235b-a22b-instruct-2507` works on Cerebras free tier. Other models are tier-gated — `/models` lists them but `/chat/completions` returns 404 on tiers that don't include them.
+
+Tested on free tier (2026-04):
+
+| Model | Works on free tier |
+|-------|---------|
+| `qwen-3-235b-a22b-instruct-2507` | ✅ (default) |
+| `llama3.1-8b` | ✅ |
+| `gpt-oss-120b` | ❌ gated |
+| `zai-glm-4.7` | ❌ gated |
+
+If you have a higher-tier plan, set `CEREBRAS_MODEL` explicitly to use a gated model. Check your plan at https://cloud.cerebras.ai.
