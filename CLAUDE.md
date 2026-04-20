@@ -2,44 +2,54 @@
 
 ## Overview
 
-Speed-run offloads first-pass code generation to Cerebras (~2000 tokens/sec), then Claude handles architecture decisions and surgical fixes. Same quality code, ~60% fewer Claude tokens, 20x faster generation per file.
+Speed-run offloads first-pass code generation to a cheap/fast model so Claude Sonnet can focus on architecture decisions and surgical fixes. Same quality code at a fraction of the token cost.
 
-Most code is pattern-following, not reasoning. Cerebras handles the patterns; Claude handles the thinking.
+Most code is pattern-following, not reasoning. The cheap backend handles patterns; Claude Sonnet handles the thinking.
+
+## Backends
+
+| Backend | When active | Speed | Cost savings vs Sonnet |
+|---------|-------------|-------|------------------------|
+| **Haiku** (default) | Always available — no configuration | ~150 tok/sec | ~80% cheaper |
+| **Cerebras** (opt-in) | Auto-used when `CEREBRAS_API_KEY` is set and reachable | ~2000 tok/sec | ~90% cheaper |
+
+Speed-run works out of the box with Haiku. Set `CEREBRAS_API_KEY` to upgrade to ~10x faster generation if you need it.
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────┐
-│  speed-run (orchestrator skill)             │
-│  Checks API key → routes to sub-skill       │
-├──────────┬──────────┬───────────────────────┤
-│  turbo   │ showdown │  any-percent          │
-│  1 task  │ N runners│  N approaches         │
-│  direct  │ same spec│  different specs      │
-└────┬─────┴────┬─────┴────┬──────────────────┘
+┌─────────────────────────────────────────────────┐
+│  speed-run (orchestrator skill)                 │
+│  Detects backend (Haiku default, Cerebras opt-in)│
+│  Routes to subskill with BACKEND= hint          │
+├──────────┬──────────┬───────────────────────────┤
+│  turbo   │ showdown │  any-percent              │
+│  1 task  │ N runners│  N approaches             │
+│  direct  │ same spec│  different specs          │
+└────┬─────┴────┬─────┴────┬──────────────────────┘
      │          │          │
      v          v          v
-┌─────────────────────────────────────────────┐
-│  MCP Server (@2389/speed-run-mcp)           │
-│  ┌───────────┬──────────────┬─────────────┐ │
-│  │ generate  │ generate_and │ check_status│ │
-│  │           │ _write_files │             │ │
-│  └─────┬─────┴──────┬───────┴─────────────┘ │
-│        │            │                        │
-│        v            v                        │
-│  Cerebras API (llama-4-scout-17b-16e-instruct)│
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│  Dispatch based on BACKEND:                     │
+│                                                  │
+│  haiku → Agent tool with model="haiku"          │
+│          Writes files directly via Write tool   │
+│                                                  │
+│  cerebras → MCP server (@2389/speed-run-mcp)    │
+│             → Cerebras API (qwen-3-235b / etc)  │
+└─────────────────────────────────────────────────┘
 ```
 
 ## Prerequisites
 
-### CEREBRAS_API_KEY
+### Default (Haiku)
 
-Get a free key at https://cloud.cerebras.ai
+None. Speed-run works out of the box using your existing Claude access.
 
-Set it using **either** method:
+### Opt-In (Cerebras) — for maximum speed
 
-**Option A (recommended):** Add to `~/.claude/settings.json`:
+Get a free key at https://cloud.cerebras.ai and set it in `~/.claude/settings.json`:
+
 ```json
 {
   "env": {
@@ -48,16 +58,17 @@ Set it using **either** method:
 }
 ```
 
-**Option B:** Export in shell profile (`~/.zshrc` or `~/.bashrc`):
+Or export in your shell profile:
+
 ```bash
 export CEREBRAS_API_KEY="your-key-here"
 ```
 
-Restart Claude Code after setting the key. The plugin checks on session start via a hook and warns if the key is missing.
+Restart Claude Code after setting the key. On startup, speed-run will detect it and switch to the Cerebras backend automatically.
 
-### MCP Server
+### MCP Server (Cerebras only)
 
-The MCP server auto-registers via `.mcp.json` when the plugin is installed. If `mcp__speed-run__*` tools aren't available, build manually:
+The MCP server auto-registers via `.mcp.json` and is only used when Cerebras is active. If `mcp__speed-run__*` tools aren't available after setting `CEREBRAS_API_KEY`, build manually:
 
 ```bash
 cd ./mcp && npm install && npm run build
@@ -133,7 +144,15 @@ Evaluates implementations across 5 criteria, each scored 1-5:
 
 **Hard gates:** Fitness delta >= 2 between variants, or any score of 1, triggers automatic disqualification.
 
-## MCP tools
+## Backend dispatch
+
+### Haiku backend (default)
+
+No MCP involved. Skills dispatch an Agent tool subagent with `model="haiku"`, `Write`/`Edit`/`Read` tool access, and the contract prompt. The Haiku subagent writes files directly to disk — no `<FILE>` tag parsing needed. Sonnet reads the files back from disk when surgical fixes are required.
+
+### Cerebras backend (opt-in)
+
+Used when `CEREBRAS_API_KEY` is set. Skills call the MCP server tools:
 
 | Tool | Purpose |
 |------|---------|
@@ -141,9 +160,9 @@ Evaluates implementations across 5 criteria, each scored 1-5:
 | `mcp__speed-run__generate_and_write_files` | Send a prompt, parse file blocks from response, write to disk |
 | `mcp__speed-run__check_status` | Verify API key is set and Cerebras is reachable |
 
-### File output format
+### File output format (Cerebras only)
 
-The MCP server parses generated code from XML-style tags:
+The Cerebras MCP server parses generated code from XML-style tags:
 
 ```text
 <FILE path="src/main.py">
@@ -156,16 +175,18 @@ Two legacy fallback formats (`### FILE: path` with fenced blocks, or raw content
 
 If generated code contains literal triple backticks, use `TRIPLE_BACKTICK` as a placeholder - the server auto-replaces after extraction.
 
+The Haiku backend doesn't need this — the subagent just calls Write directly.
+
 ## Speed-run vs test kitchen
 
-| Aspect | Test Kitchen | Speed-Run |
-|--------|-------------|-----------|
-| Code generation | Claude direct | Hosted LLM (Cerebras) |
-| API key required | No | Yes (CEREBRAS_API_KEY) |
-| Token cost | Standard Claude pricing | ~60% savings on generation |
-| Generation speed | ~10s per file | ~0.5s per file |
-| First-pass quality | ~100% correct | 80-95% (Claude fixes the rest) |
-| Fix strategy | Rarely needed | Surgical fixes by Claude |
+| Aspect | Test Kitchen | Speed-Run (Haiku) | Speed-Run (Cerebras) |
+|--------|-------------|-------------------|----------------------|
+| Code generation | Claude Sonnet | Claude Haiku subagent | Cerebras hosted LLM |
+| API key required | No | No | Yes (CEREBRAS_API_KEY) |
+| Token cost | Baseline | ~80% savings | ~90% savings |
+| Generation speed | ~10s per file | ~3-5s per file | ~0.5s per file |
+| First-pass quality | ~100% | 90-95% | 80-95% |
+| Fix strategy | Rarely needed | Surgical fixes by Sonnet | Surgical fixes by Sonnet |
 | Best for | Any task | Algorithmic code, boilerplate, multi-variant |
 
 Use test-kitchen when first-pass quality matters most. Use speed-run when you want speed and token savings and don't mind a fix cycle.
@@ -182,21 +203,29 @@ Use test-kitchen when first-pass quality matters most. Use speed-run when you wa
 
 ## Common mistakes
 
-Don't re-prompt Cerebras when tests fail. Claude should read the error and fix it surgically. Cerebras already did the structural work -- regenerating from scratch wastes the effort.
+Don't re-dispatch the cheap backend when tests fail. Claude Sonnet should read the error and fix it surgically. The cheap backend already did the structural work — regenerating from scratch wastes the effort.
 
 Showdown and any-percent must dispatch all runners in a single message. Running them one at a time defeats the whole point of parallelism.
 
 Turbo needs structured contract prompts (DATA CONTRACT, API CONTRACT, etc). If you send it a vague prompt, you get vague code back.
 
-Don't use speed-run for tasks that require actual reasoning about architecture or tradeoffs. Cerebras is fast at following patterns, not at thinking. Use Claude directly for those.
+Don't use speed-run for tasks that require actual reasoning about architecture or tradeoffs. The cheap backend is fast at following patterns, not at thinking. Use Claude Sonnet directly for those.
 
-If tools aren't working, you probably forgot the API key. The session-start hook warns on launch, but `mcp__speed-run__check_status` will confirm.
+If the Cerebras backend isn't working, check `mcp__speed-run__check_status`. The plugin automatically falls back to Haiku when Cerebras is unreachable.
 
 ## Configuration
 
+No configuration is required for the default Haiku backend.
+
+For the Cerebras backend:
+
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `CEREBRAS_API_KEY` | (required) | API key from https://cloud.cerebras.ai |
-| `CEREBRAS_MODEL` | `llama-4-scout-17b-16e-instruct` | Model to use |
+| `CEREBRAS_API_KEY` | (required for Cerebras) | API key from https://cloud.cerebras.ai |
+| `CEREBRAS_MODEL` | `gpt-oss-120b` | Model to use (see tier note) |
 | `CEREBRAS_URL` | `https://api.cerebras.ai/v1` | API endpoint |
-| `GENERATION_TIMEOUT` | `30000` | Timeout in ms |
+| `GENERATION_TIMEOUT` | `120` | Fetch timeout in seconds (not ms) |
+
+### Model selection (Cerebras)
+
+Some Cerebras models are gated by tier. On the free tier, these work: `qwen-3-235b-a22b-instruct-2507`, `llama3.1-8b`. These are gated (404 on `/chat/completions`) on free tier: `gpt-oss-120b` (current default), `zai-glm-4.7`. Set `CEREBRAS_MODEL` explicitly if you hit gating.

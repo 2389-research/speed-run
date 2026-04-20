@@ -1,13 +1,15 @@
 ---
 name: showdown
-description: Same design, multiple parallel runners compete using hosted LLM for code generation. Each runner creates own plan, generates code via Cerebras, pick the best. Part of speed-run pipeline.
+description: Same design, multiple parallel runners compete. Each runner creates own plan, generates code via the cheap backend (Haiku by default, Cerebras if configured), pick the best. Part of speed-run pipeline.
 ---
 
 # Showdown
 
-Same design, multiple runners compete. Each runner creates their own implementation plan from the shared design, then generates code via hosted LLM. Natural variation emerges from independent planning decisions.
+Same design, multiple runners compete. Each runner creates their own implementation plan from the shared design, then generates code via the cheap backend. Natural variation emerges from independent planning decisions.
 
-**Announce:** "I'm using speed-run:showdown for parallel competition via hosted LLM."
+**Announce:** "I'm using speed-run:showdown for parallel competition."
+
+The orchestrator passes `BACKEND=haiku` or `BACKEND=cerebras` — pass this through to each runner so they know which dispatch path to use (see "Runner prompt" below).
 
 **Key insight:** Don't share a pre-made implementation plan. Each runner generates their own plan from the design doc, ensuring genuine variation.
 
@@ -63,7 +65,7 @@ docs/plans/<feature>/
 Complexity assessment: medium feature, touches auth
 Spawning 3 parallel runners
 Each will create their own implementation plan from the design.
-All runners will use hosted LLM (Cerebras) for code generation.
+All runners will use the [BACKEND] backend for code generation.
 ```
 
 ## Phase 2: Parallel Execution
@@ -99,6 +101,7 @@ You are runner N of M in a speed-run showdown.
 Other runners are implementing the same design in parallel.
 Each runner creates their own implementation plan - your approach may differ from others.
 
+**Backend:** [BACKEND]  (haiku or cerebras — passed in from orchestrator)
 **Your working directory:** /path/to/.worktrees/speed-run-runner-N
 **Design doc:** docs/plans/<feature>/design.md
 **Your plan location:** docs/plans/<feature>/speed-run/showdown/runner-N/plan.md
@@ -109,19 +112,23 @@ Each runner creates their own implementation plan - your approach may differ fro
    - Save to: docs/plans/<feature>/speed-run/showdown/runner-N/plan.md
    - Make your own architectural decisions
    - Don't try to guess what other runners will do
-3. For each implementation task, use hosted LLM for first-pass code generation:
+3. For each implementation task, use the cheap backend for first-pass generation:
    - Write a contract prompt (DATA CONTRACT + API CONTRACT + ALGORITHM + RULES)
-   - Call: mcp__speed-run__generate_and_write_files
+   - Generate based on BACKEND:
+     * cerebras: call mcp__speed-run__generate_and_write_files
+     * haiku: dispatch an Agent tool subagent with model="haiku",
+             Write/Edit/Read tool access, and the contract prompt;
+             instruct it to write files directly (not wrapped in <FILE> tags)
    - Run tests
-   - Fix failures with Claude Edit tool (surgical 1-4 line fixes)
+   - Fix failures with Claude Edit tool (surgical 1-4 line fixes by Sonnet)
    - Re-test until passing
 4. Follow TDD for each task
 5. Use verification before claiming done
 
 **Code generation rules:**
-- Use mcp__speed-run__generate_and_write_files for algorithmic code
-- Use mcp__speed-run__generate for text/docs generation
-- Use Claude direct ONLY for surgical fixes and multi-file coordination
+- Use the cheap backend for first-pass algorithmic code
+- Use Claude Sonnet (Edit tool) ONLY for surgical fixes and multi-file coordination
+- Never re-dispatch the cheap backend to regenerate — Sonnet fixing is cheaper
 - Write contract prompts with exact data models, routes, and algorithm steps
 
 **Report when done:**
@@ -129,17 +136,17 @@ Each runner creates their own implementation plan - your approach may differ fro
 - All tasks completed: yes/no
 - Test results (output)
 - Files changed count
-- Hosted LLM calls made
+- Backend calls made (count)
 - Fix cycles needed
 - Any issues encountered
 ```
 
 **Monitor progress:**
 ```
-Showdown status (design: auth-system):
-- runner-1: planning... -> generating via Cerebras -> fixing 2/3 -> tests passing
-- runner-2: planning... -> generating via Cerebras -> tests passing
-- runner-3: planning... -> generating via Cerebras -> fixing 1/2 -> tests passing
+Showdown status (design: auth-system, backend: [BACKEND]):
+- runner-1: planning... -> generating -> fixing 2/3 -> tests passing
+- runner-2: planning... -> generating -> tests passing
+- runner-3: planning... -> generating -> fixing 1/2 -> tests passing
 ```
 
 ## Phase 3: Judging
@@ -252,9 +259,9 @@ Save to: `docs/plans/<feature>/speed-run/showdown/result.md`
 - Problem: Serial dispatch instead of parallel
 - Fix: Send ALL Task tools in a SINGLE message
 
-**Using Claude direct for all code generation**
+**Using Claude Sonnet direct for all code generation**
 - Problem: Defeats the purpose of speed-run (token savings)
-- Fix: Runners MUST use hosted LLM for first-pass generation
+- Fix: Runners MUST use the cheap backend (Haiku or Cerebras) for first-pass generation. Sonnet only touches the code for surgical fixes.
 
 **Skipping fresh-eyes**
 - Problem: Judge has no quality signal

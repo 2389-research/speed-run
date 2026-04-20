@@ -1,15 +1,17 @@
 ---
 name: any-percent
-description: Explore different architectural approaches in parallel using hosted LLM for code generation. No restrictions on approach - fastest path to comparing real implementations. Part of speed-run pipeline.
+description: Explore different architectural approaches in parallel. No restrictions on approach — fastest path to comparing real implementations. Uses the cheap backend (Haiku by default, Cerebras if configured). Part of speed-run pipeline.
 ---
 
 # Any%
 
-Explore different approaches in parallel - no restrictions, fastest path to comparing real implementations. Each variant uses hosted LLM for code generation.
+Explore different approaches in parallel — no restrictions, fastest path to comparing real implementations. Each variant uses the cheap backend for code generation.
 
-**Announce:** "I'm using speed-run:any% for parallel exploration via hosted LLM."
+**Announce:** "I'm using speed-run:any% for parallel exploration."
 
-**Core principle:** When unsure of the best architecture, implement multiple approaches fast via hosted LLM and let real code + tests determine the winner.
+The orchestrator passes `BACKEND=haiku` or `BACKEND=cerebras` — pass this through to each variant so they know which dispatch path to use.
+
+**Core principle:** When unsure of the best architecture, implement multiple approaches fast via the cheap backend and let real code + tests determine the winner.
 
 ## When to Use
 
@@ -25,7 +27,7 @@ Explore different approaches in parallel - no restrictions, fastest path to comp
 | **1. Context** | Quick gathering (1-2 questions max) |
 | **2. Approaches** | Generate 2-5 architectural approaches |
 | **3. Plan** | Create implementation plan per variant |
-| **4. Implement** | Dispatch ALL agents in SINGLE message, each uses hosted LLM |
+| **4. Implement** | Dispatch ALL agents in SINGLE message, each uses the cheap backend |
 | **5. Evaluate** | Scenario tests -> fresh-eyes -> judge survivors |
 | **6. Complete** | Finish winner, cleanup losers |
 
@@ -78,7 +80,7 @@ Based on the requirements, here are 3 approaches to explore:
    → Pros: Fast, built-in pub/sub
    → Cons: Memory-bound, limited queries
 
-All will be implemented via hosted LLM and tested.
+All will be implemented via the cheap backend and tested.
 Spawning 3 parallel variants now.
 ```
 
@@ -125,22 +127,29 @@ Other variants are being implemented in parallel with different approaches.
   - [Key architectural decisions for this variant]
   - [Technology choices specific to this variant]
 
+**Backend:** [BACKEND]  (haiku or cerebras — passed in from orchestrator)
+
 **Your workflow:**
 1. Create implementation plan for YOUR approach
    - Save to plan location above
    - Focus on what makes this approach unique
-2. For each implementation task, use hosted LLM for first-pass code generation:
+2. For each implementation task, use the cheap backend for first-pass generation:
    - Write a contract prompt (DATA CONTRACT + API CONTRACT + ALGORITHM + RULES)
-   - Call: mcp__speed-run__generate_and_write_files
+   - Generate based on BACKEND:
+     * cerebras: call mcp__speed-run__generate_and_write_files
+     * haiku: dispatch an Agent tool subagent with model="haiku",
+             Write/Edit/Read tool access, and the contract prompt;
+             instruct it to write files directly (not wrapped in <FILE> tags)
    - Run tests
-   - Fix failures with Claude Edit tool (surgical 1-4 line fixes)
+   - Fix failures with Claude Edit tool (surgical 1-4 line fixes by Sonnet)
    - Re-test until passing
 3. Follow TDD
 4. Use verification before claiming done
 
 **Code generation rules:**
-- Use mcp__speed-run__generate_and_write_files for algorithmic code
-- Use Claude direct ONLY for surgical fixes and multi-file coordination
+- Use the cheap backend for first-pass algorithmic code
+- Use Claude Sonnet (Edit tool) ONLY for surgical fixes and multi-file coordination
+- Never re-dispatch the cheap backend to regenerate — Sonnet fixing is cheaper
 - Write contract prompts with exact data models, routes, and algorithm steps
 
 **Report when done:**
@@ -148,7 +157,7 @@ Other variants are being implemented in parallel with different approaches.
 - All tasks completed: yes/no
 - Test results (output)
 - Files changed count
-- Hosted LLM calls made
+- Backend calls made (count)
 - Fix cycles needed
 - What makes this variant's approach unique
 - Any issues encountered
@@ -184,7 +193,7 @@ Context to provide:
 - Test results from each variant
 - Scenario test results
 - Fresh-eyes findings
-- Speed-run metrics: hosted LLM calls, fix cycles, generation time per variant
+- Speed-run metrics: backend calls, fix cycles, generation time per variant
 ```
 
 The judge skill will:
@@ -252,9 +261,9 @@ Save to: `docs/plans/<feature>/speed-run/any-percent/result.md`
 - Problem: Defeats the purpose of any% (fast exploration)
 - Fix: 1-2 questions max, then generate and go
 
-**Using Claude direct for all code generation**
+**Using Claude Sonnet direct for all code generation**
 - Problem: No token savings, defeats speed-run purpose
-- Fix: Variants MUST use hosted LLM for first-pass generation
+- Fix: Variants MUST use the cheap backend (Haiku or Cerebras) for first-pass generation. Sonnet only handles surgical fixes.
 
 **Dispatching variants in separate messages**
 - Problem: Serial instead of parallel
