@@ -1,10 +1,17 @@
 #!/bin/bash
-# Check if CEREBRAS_API_KEY is set and warn the user if not
+# Speed-run session start hook.
+# Informs the user which backend is active.
 
 if [ -z "$CEREBRAS_API_KEY" ]; then
     {
-        echo "speed-run: CEREBRAS_API_KEY is not set. Speed-run skills will not work without it."
-        echo "  Get a free key at: https://cloud.cerebras.ai"
-        echo "  Then add to ~/.claude/settings.json: { \"env\": { \"CEREBRAS_API_KEY\": \"your-key\" } }"
+        echo "speed-run: using Haiku backend (default)."
+        echo "  • Works out of the box — no setup needed."
+        echo "  • For ~10x faster generation, set CEREBRAS_API_KEY."
+        echo "  • Get a free Cerebras key at: https://cloud.cerebras.ai"
+    } >&2
+else
+    {
+        echo "speed-run: CEREBRAS_API_KEY detected — attempting Cerebras backend for fast generation."
+        echo "  • If Cerebras is unreachable, speed-run falls back to Haiku automatically."
     } >&2
 fi
