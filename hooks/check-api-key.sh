@@ -11,6 +11,7 @@ if [ -z "$CEREBRAS_API_KEY" ]; then
     } >&2
 else
     {
-        echo "speed-run: CEREBRAS_API_KEY detected — will use Cerebras backend for fast generation."
+        echo "speed-run: CEREBRAS_API_KEY detected — attempting Cerebras backend for fast generation."
+        echo "  • If Cerebras is unreachable, speed-run falls back to Haiku automatically."
     } >&2
 fi

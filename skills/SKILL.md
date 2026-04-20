@@ -31,7 +31,7 @@ Check `CEREBRAS_API_KEY`:
 Tell the user which backend will be used:
 
 **Haiku:**
-```
+```text
 Speed-run ready. Using Haiku backend (default).
   • No API key needed — uses your existing Claude access
   • ~5x cheaper than Sonnet for first-pass generation
@@ -39,7 +39,7 @@ Speed-run ready. Using Haiku backend (default).
 ```
 
 **Cerebras:**
-```
+```text
 Speed-run ready. Using Cerebras backend.
   • Model: [model name from check_status]
   • ~2000 tokens/sec generation speed
@@ -47,7 +47,7 @@ Speed-run ready. Using Cerebras backend.
 
 ## Step 3: Route
 
-```
+```text
 How would you like to proceed?
 
 1. Turbo — Direct code generation (single task, fast)
