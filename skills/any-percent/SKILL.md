@@ -171,8 +171,8 @@ Save to: `docs/plans/<feature>/speed-run/any-percent/result.md`
 | `superpowers:writing-plans` | Generate implementation plan per variant |
 | `superpowers:using-git-worktrees` | Create isolated worktree per variant |
 | `superpowers:dispatching-parallel-agents` | Dispatch all variant agents in parallel |
-| `scenario-testing:skills` | Run same scenarios against all variants |
-| `fresh-eyes-review:skills` | Quality review on survivors |
+| `scenario-testing:scenario-testing` | Run same scenarios against all variants |
+| `fresh-eyes-review:fresh-eyes-review` | Quality review on survivors |
 | `speed-run:judge` | Scoring framework (bundled) |
 | `superpowers:finishing-a-development-branch` | Handle winner, cleanup losers |
 

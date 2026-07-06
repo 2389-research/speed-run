@@ -37,9 +37,9 @@ docs/plans/<feature>/
 | `git-worktrees` | `superpowers:using-git-worktrees` | `git worktree add .worktrees/<name> -b <branch>` |
 | `tdd` | `superpowers:test-driven-development` | RED-GREEN-REFACTOR cycle |
 | `verification` | `superpowers:verification-before-completion` | Run command, read output, THEN claim status |
-| `fresh-eyes` | `fresh-eyes-review:skills` (2389) | 2-5 min review for security, logic, edge cases |
+| `fresh-eyes` | `fresh-eyes-review:fresh-eyes-review` (2389) | 2-5 min review for security, logic, edge cases |
 | `judge` | `speed-run:judge` | Scoring framework with checklists (MUST invoke at Phase 4) |
-| `scenario-testing` | `scenario-testing:skills` (2389) | `.scratch/` E2E scripts, real dependencies |
+| `scenario-testing` | `scenario-testing:scenario-testing` (2389) | `.scratch/` E2E scripts, real dependencies |
 | `finish-branch` | `superpowers:finishing-a-development-branch` | Verify tests, present options, cleanup |
 
 ## Phase 1: Complexity Assessment
