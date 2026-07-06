@@ -27,7 +27,7 @@ Most code is pattern-following, not reasoning. Cerebras handles the patterns; Cl
 │  └─────┬─────┴──────┬───────┴─────────────┘ │
 │        │            │                        │
 │        v            v                        │
-│  Cerebras API (llama-4-scout-17b-16e-instruct)│
+│  Cerebras API (gpt-oss-120b)                  │
 └─────────────────────────────────────────────┘
 ```
 
@@ -197,6 +197,6 @@ If tools aren't working, you probably forgot the API key. The session-start hook
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `CEREBRAS_API_KEY` | (required) | API key from https://cloud.cerebras.ai |
-| `CEREBRAS_MODEL` | `llama-4-scout-17b-16e-instruct` | Model to use |
+| `CEREBRAS_MODEL` | `gpt-oss-120b` | Model to use |
 | `CEREBRAS_URL` | `https://api.cerebras.ai/v1` | API endpoint |
-| `GENERATION_TIMEOUT` | `30000` | Timeout in ms |
+| `GENERATION_TIMEOUT` | `120` | Timeout in seconds |

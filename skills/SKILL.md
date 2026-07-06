@@ -1,6 +1,6 @@
 ---
 name: speed-run
-description: Token-efficient code generation pipeline using hosted LLM. Triggers on "speed-run", "fast build", "turbo build", "use hosted LLM", "use cerebras". Routes to turbo (direct codegen), showdown (parallel competition), or any% (parallel exploration).
+description: "Token-efficient code generation pipeline via Cerebras hosted LLM; requires CEREBRAS_API_KEY. Checks API key then routes to speed-run:turbo (direct codegen), speed-run:showdown (parallel competition), or speed-run:any-percent (parallel exploration). Use when the user says \"speed-run\", \"fast build\", \"turbo build\", \"use Cerebras\", or requests token-efficient code generation."
 ---
 
 # Speed-Run
