@@ -1,6 +1,6 @@
 ---
 name: turbo
-description: Direct code generation via hosted LLM (Cerebras). Write a contract prompt, generate code, fix surgically. Part of speed-run pipeline.
+description: Generates code via Cerebras hosted LLM from a structured contract prompt, writes files directly to disk, then applies surgical Claude fixes for test failures (~60% token savings vs Claude direct). Use when you have a single task — algorithmic code, boilerplate, data transformations, or multi-file scaffolding — and want fast token-efficient generation.
 ---
 
 # Turbo
@@ -27,7 +27,7 @@ Direct code generation via hosted LLM. Claude writes the contract, Cerebras impl
 | Aspect | Claude Direct | Turbo (Hosted LLM) |
 |--------|---------------|---------------------|
 | Speed | ~10s | ~0.5s |
-| Token Cost | Higher | ~90% savings |
+| Token Cost | Higher | ~60% savings |
 | First-pass Quality | ~100% | 80-95% |
 | Fixes Needed | 0 | 0-2 typical |
 
