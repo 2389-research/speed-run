@@ -27,7 +27,7 @@ Most code is pattern-following, not reasoning. Cerebras handles the patterns; Cl
 │  └─────┬─────┴──────┬───────┴─────────────┘ │
 │        │            │                        │
 │        v            v                        │
-│  Cerebras API (llama-4-scout-17b-16e-instruct)│
+│  Cerebras API (gpt-oss-120b)                  │
 └─────────────────────────────────────────────┘
 ```
 
@@ -178,7 +178,7 @@ Use test-kitchen when first-pass quality matters most. Use speed-run when you wa
 | `superpowers:dispatching-parallel-agents` | showdown, any-percent | Parallel dispatch |
 | `superpowers:using-git-worktrees` | showdown, any-percent | Isolated workspaces |
 | `superpowers:verification-before-completion` | all | Verify before claiming done |
-| `fresh-eyes-review:skills` | showdown, any-percent | Quality gate before comparison |
+| `fresh-eyes-review:fresh-eyes-review` | showdown, any-percent | Quality gate before comparison |
 
 ## Common mistakes
 
@@ -197,6 +197,6 @@ If tools aren't working, you probably forgot the API key. The session-start hook
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `CEREBRAS_API_KEY` | (required) | API key from https://cloud.cerebras.ai |
-| `CEREBRAS_MODEL` | `llama-4-scout-17b-16e-instruct` | Model to use |
+| `CEREBRAS_MODEL` | `gpt-oss-120b` | Model to use |
 | `CEREBRAS_URL` | `https://api.cerebras.ai/v1` | API endpoint |
-| `GENERATION_TIMEOUT` | `30000` | Timeout in ms |
+| `GENERATION_TIMEOUT` | `120` | Timeout in seconds |

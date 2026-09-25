@@ -1,6 +1,6 @@
 ---
 name: showdown
-description: Same design, multiple parallel runners compete using hosted LLM for code generation. Each runner creates own plan, generates code via Cerebras, pick the best. Part of speed-run pipeline.
+description: Runs 2-5 parallel runners against a shared design doc in isolated git worktrees, each independently planning and generating code via Cerebras hosted LLM, then invokes speed-run:judge to score all implementations and pick the winner (~60% token savings vs Claude direct). Use when you have a finalized design and want the best implementation rather than architectural exploration.
 ---
 
 # Showdown
@@ -37,9 +37,9 @@ docs/plans/<feature>/
 | `git-worktrees` | `superpowers:using-git-worktrees` | `git worktree add .worktrees/<name> -b <branch>` |
 | `tdd` | `superpowers:test-driven-development` | RED-GREEN-REFACTOR cycle |
 | `verification` | `superpowers:verification-before-completion` | Run command, read output, THEN claim status |
-| `fresh-eyes` | `fresh-eyes-review:skills` (2389) | 2-5 min review for security, logic, edge cases |
+| `fresh-eyes` | `fresh-eyes-review:fresh-eyes-review` (2389) | 2-5 min review for security, logic, edge cases |
 | `judge` | `speed-run:judge` | Scoring framework with checklists (MUST invoke at Phase 4) |
-| `scenario-testing` | `scenario-testing:skills` (2389) | `.scratch/` E2E scripts, real dependencies |
+| `scenario-testing` | `scenario-testing:scenario-testing` (2389) | `.scratch/` E2E scripts, real dependencies |
 | `finish-branch` | `superpowers:finishing-a-development-branch` | Verify tests, present options, cleanup |
 
 ## Phase 1: Complexity Assessment
@@ -92,47 +92,7 @@ Use `parallel-agents` pattern. Send ONE message with multiple Task tool calls:
 </single message>
 ```
 
-**Runner prompt (each gets same instructions with their runner number):**
-
-```
-You are runner N of M in a speed-run showdown.
-Other runners are implementing the same design in parallel.
-Each runner creates their own implementation plan - your approach may differ from others.
-
-**Your working directory:** /path/to/.worktrees/speed-run-runner-N
-**Design doc:** docs/plans/<feature>/design.md
-**Your plan location:** docs/plans/<feature>/speed-run/showdown/runner-N/plan.md
-
-**Your workflow:**
-1. Read the design doc thoroughly
-2. Use writing-plans skill to create YOUR implementation plan
-   - Save to: docs/plans/<feature>/speed-run/showdown/runner-N/plan.md
-   - Make your own architectural decisions
-   - Don't try to guess what other runners will do
-3. For each implementation task, use hosted LLM for first-pass code generation:
-   - Write a contract prompt (DATA CONTRACT + API CONTRACT + ALGORITHM + RULES)
-   - Call: mcp__speed-run__generate_and_write_files
-   - Run tests
-   - Fix failures with Claude Edit tool (surgical 1-4 line fixes)
-   - Re-test until passing
-4. Follow TDD for each task
-5. Use verification before claiming done
-
-**Code generation rules:**
-- Use mcp__speed-run__generate_and_write_files for algorithmic code
-- Use mcp__speed-run__generate for text/docs generation
-- Use Claude direct ONLY for surgical fixes and multi-file coordination
-- Write contract prompts with exact data models, routes, and algorithm steps
-
-**Report when done:**
-- Plan created: yes/no
-- All tasks completed: yes/no
-- Test results (output)
-- Files changed count
-- Hosted LLM calls made
-- Fix cycles needed
-- Any issues encountered
-```
+**Runner prompt:** see `references/runner-agent-prompt.md`
 
 **Monitor progress:**
 ```

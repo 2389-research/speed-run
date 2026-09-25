@@ -1,6 +1,6 @@
 ---
 name: any-percent
-description: Explore different architectural approaches in parallel using hosted LLM for code generation. No restrictions on approach - fastest path to comparing real implementations. Part of speed-run pipeline.
+description: Runs 2-5 parallel agents in isolated git worktrees, each implementing a distinct architectural approach via Cerebras hosted LLM, then judges all survivors to select the winner (~60% token savings vs Claude direct). Use when the best architecture is unclear and you want real competing implementations to reveal the answer rather than deliberating upfront.
 ---
 
 # Any%
@@ -111,48 +111,7 @@ Branches:
 </single message>
 ```
 
-**Variant agent prompt:**
-
-```
-You are implementing the [VARIANT-SLUG] variant in a speed-run any% exploration.
-Other variants are being implemented in parallel with different approaches.
-
-**Your working directory:** /path/to/.worktrees/speed-run-variant-<slug>
-**Design context:** docs/plans/<feature>/design.md
-**Your plan location:** docs/plans/<feature>/speed-run/any-percent/variant-<slug>/plan.md
-
-**Your approach:** [APPROACH DESCRIPTION]
-  - [Key architectural decisions for this variant]
-  - [Technology choices specific to this variant]
-
-**Your workflow:**
-1. Create implementation plan for YOUR approach
-   - Save to plan location above
-   - Focus on what makes this approach unique
-2. For each implementation task, use hosted LLM for first-pass code generation:
-   - Write a contract prompt (DATA CONTRACT + API CONTRACT + ALGORITHM + RULES)
-   - Call: mcp__speed-run__generate_and_write_files
-   - Run tests
-   - Fix failures with Claude Edit tool (surgical 1-4 line fixes)
-   - Re-test until passing
-3. Follow TDD
-4. Use verification before claiming done
-
-**Code generation rules:**
-- Use mcp__speed-run__generate_and_write_files for algorithmic code
-- Use Claude direct ONLY for surgical fixes and multi-file coordination
-- Write contract prompts with exact data models, routes, and algorithm steps
-
-**Report when done:**
-- Plan created: yes/no
-- All tasks completed: yes/no
-- Test results (output)
-- Files changed count
-- Hosted LLM calls made
-- Fix cycles needed
-- What makes this variant's approach unique
-- Any issues encountered
-```
+**Variant agent prompt:** see `references/variant-agent-prompt.md`
 
 ## Phase 4: Evaluate
 
@@ -171,32 +130,7 @@ Fresh-eyes review of variant-postgres (N files)...
 
 ### Step 4: Invoke Judge Skill
 
-**CRITICAL: Invoke `speed-run:judge` now.**
-
-The judge skill contains the full scoring framework with checklists. Invoking it fresh ensures the scoring format is followed exactly.
-
-```text
-Invoke: speed-run:judge
-
-Context to provide:
-- Variants to judge: variant-sqlite, variant-postgres, variant-redis
-- Worktree locations: .worktrees/speed-run-variant-<slug>/
-- Test results from each variant
-- Scenario test results
-- Fresh-eyes findings
-- Speed-run metrics: hosted LLM calls, fix cycles, generation time per variant
-```
-
-The judge skill will:
-1. Fill out the complete scoring worksheet for each variant
-2. Fill out the Speed-Run Metrics table
-3. Build the scorecard with integer scores (1-5, no half points)
-4. Check hard gates (Fitness Δ≥2, any score=1)
-5. Announce winner with rationale (including token efficiency)
-
-**Do not summarize or abbreviate the scoring.** The judge skill output should be the full worksheet.
-
-**Any%-specific context:** In any%, variants explore different architectural approaches, so Fitness differences are expected and valid. A Fitness gap here reflects different design trade-offs, not deviation from a shared design. Weight Craft and Spark higher when approaches are fundamentally different.
+**CRITICAL: Invoke `speed-run:judge` now.** See `references/judge-invocation.md` for full context and any%-specific scoring notes.
 
 ## Phase 5: Completion
 
@@ -234,13 +168,13 @@ Save to: `docs/plans/<feature>/speed-run/any-percent/result.md`
 
 | Dependency | Usage |
 |------------|-------|
-| `writing-plans` | Generate implementation plan per variant |
-| `git-worktrees` | Create isolated worktree per variant |
-| `parallel-agents` | Dispatch all variant agents in parallel |
-| `scenario-testing` | Run same scenarios against all variants |
-| `fresh-eyes` | Quality review on survivors |
-| `judge` | `speed-run:judge` - scoring framework (bundled) |
-| `finish-branch` | Handle winner, cleanup losers |
+| `superpowers:writing-plans` | Generate implementation plan per variant |
+| `superpowers:using-git-worktrees` | Create isolated worktree per variant |
+| `superpowers:dispatching-parallel-agents` | Dispatch all variant agents in parallel |
+| `scenario-testing:scenario-testing` | Run same scenarios against all variants |
+| `fresh-eyes-review:fresh-eyes-review` | Quality review on survivors |
+| `speed-run:judge` | Scoring framework (bundled) |
+| `superpowers:finishing-a-development-branch` | Handle winner, cleanup losers |
 
 ## Common Mistakes
 
